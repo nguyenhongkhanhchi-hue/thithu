@@ -1,0 +1,197 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=Baloo+2:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  /* Fraction rendering */
+  .fraction-stack {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    vertical-align: middle;
+    line-height: 1;
+    margin: 0 2px;
+  }
+  .fraction-stack .num {
+    border-bottom: 1px solid currentColor;
+    padding: 0 2px;
+    font-size: 0.85em;
+    line-height: 1.2;
+  }
+  .fraction-stack .den {
+    padding: 0 2px;
+    font-size: 0.85em;
+    line-height: 1.2;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 214 32% 91%;
+    --radius: 0.75rem;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-slate-50 text-gray-900;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
+  /* Global scrollbar hide */
+  * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Prevent scroll bounce on iOS */
+  #root {
+    min-height: 100dvh;
+  }
+}
+
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+
+  .font-serif {
+    font-family: 'Noto Serif', 'Georgia', serif;
+  }
+
+  /* Hide scrollbar on mobile for exam sections */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Exam paper texture */
+  .exam-paper {
+    background-color: #fafafa;
+    background-image: repeating-linear-gradient(
+      transparent,
+      transparent 28px,
+      #e8e8e8 28px,
+      #e8e8e8 29px
+    );
+  }
+}
+
+/* Custom range input */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #2563eb;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(37,99,235,0.3);
+}
+
+/* Smooth transitions */
+button, a {
+  transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Canvas cursor */
+canvas {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@layer utilities {
+  .font-heading { font-family: 'Baloo 2', cursive; }
+
+  .candy-card {
+    @apply bg-white rounded-3xl shadow-lg border-2 border-pink-100;
+  }
+  .candy-btn {
+    background: linear-gradient(135deg, #FF6B9D, #A855F7);
+    @apply text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all hover:shadow-xl;
+  }
+}
+
+/* ── Animations ── */
+@keyframes confetti-fall {
+  0%   { transform: translateY(-120px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(110vh)  rotate(720deg); opacity: 0; }
+}
+.confetti-piece {
+  position: fixed;
+  top: -20px;
+  border-radius: 3px;
+  animation: confetti-fall linear forwards;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Spinner animation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Loading dots */
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0; }
+  40% { opacity: 1; }
+}
