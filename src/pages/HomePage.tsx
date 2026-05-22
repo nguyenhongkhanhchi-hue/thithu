@@ -25,10 +25,13 @@ const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const credits = getCreditsRemaining();
+  const [credits, setCredits] = useState<number | null>(null);
 
   // Fullscreen management
   useEffect(() => {
+    // Cập nhật credits sau khi component mount để tránh Hydration error
+    setCredits(getCreditsRemaining());
+
     // Attempt auto-fullscreen on first user interaction if not already
     const handleFirstClick = () => {
       if (!document.fullscreenElement) {

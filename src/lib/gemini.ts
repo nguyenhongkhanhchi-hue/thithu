@@ -144,7 +144,11 @@ function useCredit(provider: "gemini" | "groq" | "onspace"): void {
 
 export function getCreditsRemaining(): number {
   const c = getRawCredits();
-  return c.gemini.remaining + c.groq.remaining + c.onspace.remaining;
+  // Sử dụng optional chaining để tránh lỗi nếu dữ liệu localStorage bị hỏng
+  const geminiRem = c.gemini?.remaining ?? 0;
+  const groqRem = c.groq?.remaining ?? 0;
+  const onspaceRem = c.onspace?.remaining ?? 0;
+  return geminiRem + groqRem + onspaceRem;
 }
 
 function assertCredits(provider: "gemini" | "groq" | "onspace"): void {
@@ -415,7 +419,14 @@ export async function ocrFromImage(
   const onspaceKeys = ONSPACE_KEYS();
 
   if (geminiKeys.length === 0 && onspaceKeys.length === 0) {
-    throw new Error("Chưa cấu hình API Key (Gemini hoặc OnSpace) để sử dụng tính năng OCR ảnh.");
+    const data = await callInternalAI("ocr-extract", {
+      imageBase64: base64,
+      mimeType,
+    });
+    if (data?.exam) {
+      return buildExam(data.exam, "Đề thi từ ảnh");
+    }
+    throw new Error("Không thể trích xuất đề thi từ ảnh.");
   }
 
   let raw: string = "";
@@ -466,7 +477,14 @@ export async function ocrFromText(text: string): Promise<Exam> {
   const onspaceKeys = ONSPACE_KEYS();
 
   if (groqKeys.length === 0 && onspaceKeys.length === 0) {
-    throw new Error("Chưa cấu hình API Key (Groq hoặc OnSpace) để sử dụng tính năng OCR văn bản.");
+    const data = await callInternalAI("ocr-extract", {
+      textContent: text,
+      fileType: "docx",
+    });
+    if (data?.exam) {
+      return buildExam(data.exam, "Đề thi từ tài liệu");
+    }
+    throw new Error("Không thể trích xuất đề thi từ tài liệu.");
   }
 
   const prompt = ocrPrompt(
@@ -521,7 +539,15 @@ export async function generateExam(
   const onspaceKeys = ONSPACE_KEYS();
 
   if (groqKeys.length === 0 && geminiKeys.length === 0 && onspaceKeys.length === 0) {
-    throw new Error("Vui lòng cấu hình ít nhất một API Key (Gemini, Groq hoặc OnSpace) trong Cài đặt.");
+    const data = await callInternalAI("generate-exam", {
+      sourceExam,
+      difficulty,
+      questionCount,
+    });
+    if (data?.exam?.sections) {
+      return data.exam.sections;
+    }
+    throw new Error("AI không trả về cấu trúc đề thi hợp lệ.");
   }
 
   const diffDesc: Record<Difficulty, string> = {
@@ -630,7 +656,20 @@ export async function randomizeQuestions(questions: any[]): Promise<any[]> {
   const onspaceKeys = ONSPACE_KEYS();
 
   if (groqKeys.length === 0 && geminiKeys.length === 0 && onspaceKeys.length === 0) {
-    throw new Error("Vui lòng cấu hình API Key để sử dụng tính năng xáo trộn dữ liệu.");
+    try {
+      const data = await callInternalAI("randomize-questions", {
+        questions,
+      });
+      if (Array.isArray(data?.questions)) {
+        return data.questions.map((q: any, i: number) => ({
+          ...questions[i],
+          ...q
+        }));
+      }
+    } catch (e) {
+      console.error("Vercel randomize failed, falling back to original questions:", e);
+    }
+    return questions;
   }
 
   // Tối ưu hóa dữ liệu gửi đi để tiết kiệm token
@@ -760,11 +799,23 @@ Yêu cầu:
 Trả lời THEO JSON (TUYỆT ĐỐI không markdown):
 {"score": 0.5, "feedback": "Nhận xét..."}`;
 
-  let raw: string = "";
-  let success = false;
   const groqKeys = GROQ_KEYS();
   const geminiKeys = GEMINI_KEYS();
   const onspaceKeys = ONSPACE_KEYS();
+
+  if (groqKeys.length === 0 && geminiKeys.length === 0 && onspaceKeys.length === 0) {
+    const data = await callInternalAI("grade-essay", {
+      questionText,
+      studentAnswer,
+      solution,
+      maxPoints,
+    });
+    const score = Math.min(maxPoints, Math.max(0, Number(data?.score) || 0));
+    return { score, feedback: String(data?.feedback || "Không có nhận xét") };
+  }
+
+  let raw: string = "";
+  let success = false;
 
   // 1. Thử dùng OnSpace rotation
   if (onspaceKeys.length > 0) {
