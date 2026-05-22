@@ -66,8 +66,9 @@ TRẢ VỀ JSON CHÍNH XÁC THEO ĐỊNH DẠNG SAU:
 {"score": 0.5, "feedback": "Nhận xét của cô..."}`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: modelName,
       generationConfig: {
         temperature: 0.5,
         responseMimeType: "application/json",

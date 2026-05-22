@@ -104,8 +104,9 @@ Trả lời CHÍNH XÁC theo JSON sau:
 
     // Gọi Google Gemini API trực tiếp
     const genAI = new GoogleGenerativeAI(apiKey);
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: modelName,
       generationConfig: {
         temperature: 0.7,
         responseMimeType: "application/json", // Yêu cầu Gemini trả JSON trực tiếp

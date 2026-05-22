@@ -16,6 +16,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AICredits, Difficulty, Exam, ExamSection } from "@/types/exam";
 import { generateId } from "@/lib/storage";
 
+const GEMINI_MODEL = (import.meta as any).env?.VITE_GEMINI_MODEL || "gemini-2.5-flash";
+
 // ── API Keys ──────────────────────────────────────────────────────────────────
 const GEMINI_KEYS = (): string[] => {
   try {
@@ -450,7 +452,7 @@ export async function ocrFromImage(
       raw = await withGeminiRotation(async (key) => {
         const genAI = new GoogleGenerativeAI(key);
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash-latest",
+          model: GEMINI_MODEL,
           generationConfig: { responseMimeType: "application/json" },
         });
 
@@ -628,7 +630,7 @@ Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown):
       raw = await withGeminiRotation(async (key) => {
         const genAI = new GoogleGenerativeAI(key);
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash-latest",
+          model: GEMINI_MODEL,
           generationConfig: { temperature: 0.8, responseMimeType: "application/json" },
         });
         const result = await model.generateContent(prompt);
@@ -729,7 +731,7 @@ Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown):
       raw = await withGeminiRotation(async (key) => {
         const genAI = new GoogleGenerativeAI(key);
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash-latest",
+          model: GEMINI_MODEL,
           generationConfig: { responseMimeType: "application/json" },
         });
         const result = await model.generateContent(prompt);
@@ -847,7 +849,7 @@ Trả lời THEO JSON (TUYỆT ĐỐI không markdown):
       raw = await withGeminiRotation(async (key) => {
         const genAI = new GoogleGenerativeAI(key);
         const model = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash-latest",
+          model: GEMINI_MODEL,
           generationConfig: { responseMimeType: "application/json" },
         });
         const result = await model.generateContent(prompt);

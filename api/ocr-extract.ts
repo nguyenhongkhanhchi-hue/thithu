@@ -62,8 +62,9 @@ Trả lời CHÍNH XÁC theo JSON sau:
 {"title":"Tên đề thi","subject":"Môn học","grade":"Lớp X","duration":40,"totalPoints":10,"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"Mô tả","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Nội dung câu hỏi","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải thích..."}]}]}`;
 
   try {
+    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
+      model: modelName,
       generationConfig: { responseMimeType: "application/json" },
     });
 
