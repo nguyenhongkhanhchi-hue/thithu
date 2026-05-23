@@ -166,6 +166,111 @@ canvas {
     background: linear-gradient(135deg, #FF6B9D, #A855F7);
     @apply text-white font-bold rounded-2xl shadow-lg active:scale-95 transition-all hover:shadow-xl;
   }
+
+  /* 3D Card Flipping Utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  /* 📱 Landscape & Constrained Height Optimization (max-height: 720px) */
+  @media (max-height: 720px) {
+    .game-outer-wrapper {
+      padding: 8px !important;
+    }
+    .game-container {
+      min-height: auto !important;
+      height: calc(100vh - 100px) !important;
+      padding: 8px !important;
+      gap: 12px !important;
+      margin-top: 4px !important;
+    }
+    .game-header {
+      padding: 8px 16px !important;
+      border-radius: 20px !important;
+      margin-bottom: 8px !important;
+    }
+    .game-header svg {
+      width: 48px !important;
+      height: 48px !important;
+    }
+    .game-header circle {
+      r: 20 !important;
+      cx: 24 !important;
+      cy: 24 !important;
+      stroke-width: 5px !important;
+    }
+    .game-header .time-text {
+      font-size: 16px !important;
+    }
+    .question-box {
+      padding: 12px 20px !important;
+      min-height: 80px !important;
+      border-radius: 24px !important;
+      margin-bottom: 8px !important;
+    }
+    .question-box h2, .question-box .text-xl, .question-box .text-2xl {
+      font-size: 18px !important;
+      line-height: 1.35 !important;
+    }
+    .choice-grid {
+      gap: 10px !important;
+      padding-top: 4px !important;
+    }
+    .choice-btn {
+      min-height: 64px !important;
+      padding: 6px 12px !important;
+      border-radius: 20px !important;
+      font-size: 14px !important;
+      border-bottom-width: 4px !important;
+    }
+    .choice-btn .text-xl {
+      font-size: 14px !important;
+    }
+    
+    /* Matching Specifics */
+    .matching-board {
+      gap: 12px !important;
+    }
+    .matching-col {
+      gap: 8px !important;
+    }
+    .matching-btn {
+      min-height: 52px !important;
+      padding: 6px 12px !important;
+      border-radius: 16px !important;
+      font-size: 13px !important;
+      border-bottom-width: 4px !important;
+    }
+    .matching-btn .text-lg {
+      font-size: 13px !important;
+    }
+    
+    /* Memory Specifics */
+    .memory-grid {
+      gap: 8px !important;
+      padding: 4px !important;
+    }
+    .memory-card {
+      aspect-ratio: 4 / 4.8 !important;
+    }
+    .memory-card-front {
+      padding: 6px !important;
+    }
+    .memory-card-front .memory-card-text {
+      font-size: 9px !important;
+      line-height: 1.2 !important;
+    }
+  }
 }
 
 /* ── Animations ── */

@@ -86,13 +86,16 @@ ${allQuestions.join("\n\n")}
 
 YÊU CẦU BẮT BUỘC:
 1. ${questionCount ? `Tổng số câu hỏi: ĐÚNG ${questionCount} câu (không thêm không bớt), phân bố hợp lý theo cấu trúc phần` : "Giữ nguyên số lượng câu và cấu trúc phần (trắc nghiệm/tự luận)"}
-2. Thay đổi HOÀN TOÀN số liệu, tên nhân vật, bối cảnh
-3. Với trắc nghiệm: tạo đúng 4 lựa chọn A/B/C/D, đáp án đúng và 3 đáp án nhiễu hợp lý
-4. Với mỗi câu: viết "solution" – lời giải chi tiết từng bước (QUAN TRỌNG)
-5. Phân số viết dạng "a/b" trong text
-6. Đề phải đúng kiến thức chương trình ${grade} Việt Nam
-7. Áp dụng đúng độ khó đã yêu cầu
-8. "solution" phải đầy đủ: công thức, tính toán từng bước, kết quả
+2. Thay đổi HOÀN TOÀN số liệu, tên nhân vật, bối cảnh.
+3. Với trắc nghiệm: tạo đúng 4 lựa chọn A/B/C/D, đáp án đúng và 3 đáp án nhiễu hợp lý.
+4. Với mỗi câu: viết "solution" – lời giải chi tiết từng bước.
+5. PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết tất cả các phân số dưới dạng a/b (ví dụ: 3/4, 2/5) trong câu hỏi, các lựa chọn và phần solution để hệ thống hiển thị hai dòng đẹp mắt. Tuyệt đối không viết phân số nằm trên một dòng ngang hay dạng LaTeX.
+6. Đề phải đúng kiến thức chương trình ${grade} Việt Nam.
+7. Áp dụng đúng độ khó đã yêu cầu.
+8. MẸO HỌC TẬP: Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là Toán hoặc liên quan toán tính toán: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là Tiếng Anh hoặc Ngoại ngữ: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
 
 QUY TẮC JSON:
 - Trả về JSON thuần túy, không có markdown.
@@ -100,7 +103,7 @@ QUY TẮC JSON:
 - Đảm bảo tất cả dấu ngoặc kép bên trong chuỗi được thoát (escaped) bằng \\".
 
 Trả lời CHÍNH XÁC theo JSON sau:
-{"title":"Tên đề thi mới","sections":[{"id":"s1","title":"Tên phần","description":"Mô tả","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Nội dung câu hỏi","choices":[{"id":"A","text":"Lựa chọn A"},{"id":"B","text":"Lựa chọn B"},{"id":"C","text":"Lựa chọn C"},{"id":"D","text":"Lựa chọn D"}],"correctAnswer":"A","points":0.5,"solution":"Giải thích..."}]}]}`;
+{"title":"Tên đề thi mới","sections":[{"id":"s1","title":"Tên phần","description":"Mô tả","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Nội dung câu hỏi","choices":[{"id":"A","text":"Lựa chọn A"},{"id":"B","text":"Lựa chọn B"},{"id":"C","text":"Lựa chọn C"},{"id":"D","text":"Lựa chọn D"}],"correctAnswer":"A","points":0.5,"solution":"Giải chi tiết... \\n💡 Mẹo nhỏ cho bé tránh ẩu tả: Hãy kiểm tra kỹ xem tử số có nhỏ hơn mẫu số không nhé!"}]}]}`;
 
     // Gọi Google Gemini API trực tiếp
     const genAI = new GoogleGenerativeAI(apiKey);

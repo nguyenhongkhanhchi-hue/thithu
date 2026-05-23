@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { StudentProvider } from "@/contexts/StudentContext";
+import { LayoutProvider } from "@/contexts/LayoutContext";
+import { ScreenInspector } from "@/components/ui/ScreenInspector";
 import { CelebrationEffect } from "@/components/features/CelebrationEffect";
 import HomePage from "@/pages/HomePage";
 import ExamsPage from "@/pages/ExamsPage";
@@ -12,6 +14,8 @@ import GamePage from "@/pages/GamePage";
 import ExamPage from "@/pages/ExamPage";
 import LoginPage from "@/pages/LoginPage";
 import LibraryPage from "@/pages/LibraryPage";
+import ParentsPortal from "@/pages/ParentsPortal";
+import MistakesPage from "@/pages/MistakesPage";
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -49,6 +53,8 @@ const AppRoutes: React.FC = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/library" element={<LibraryPage />} />
     <Route path="/exam/:examId" element={<ExamPage />} />
+    <Route path="/parents" element={<ParentsPortal />} />
+    <Route path="/mistakes" element={<MistakesPage />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -56,13 +62,17 @@ const AppRoutes: React.FC = () => (
 const App: React.FC = () => (
   <BrowserRouter>
     <AuthProvider>
-      <StudentProvider>
-        <AppRoutes />
-        <Toaster position="top-center" richColors />
-        <CelebrationEffect />
-      </StudentProvider>
+      <LayoutProvider>
+        <StudentProvider>
+          <AppRoutes />
+          <ScreenInspector />
+          <Toaster position="top-center" richColors />
+          <CelebrationEffect />
+        </StudentProvider>
+      </LayoutProvider>
     </AuthProvider>
   </BrowserRouter>
 );
+
 
 export default App;

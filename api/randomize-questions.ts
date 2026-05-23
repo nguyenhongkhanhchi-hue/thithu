@@ -53,8 +53,12 @@ YÊU CẦU:
 1. Thay đổi số liệu (ví dụ: 15 thành 24, 1/2 thành 3/4) một cách hợp lý để kết quả vẫn là số đẹp hoặc phù hợp với chương trình học.
 2. Cập nhật lại các lựa chọn A/B/C/D và đáp án đúng tương ứng với số liệu mới.
 3. Cập nhật lại Lời giải (solution) chi tiết từng bước cho số liệu mới.
-4. Giữ nguyên ID của từng câu hỏi để tôi có thể map lại.
-5. Phân số viết dạng "a/b".
+4. PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết phân số dưới dạng a/b (ví dụ: 3/4, 1/2) trong mọi nội dung, các lựa chọn và phần solution. Không viết phân số dưới dạng LaTeX hay hiển thị cùng một dòng.
+5. MẸO HỌC TẬP: Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là Toán hoặc liên quan tính toán: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là Tiếng Anh hoặc Ngoại ngữ: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
+6. Giữ nguyên ID của từng câu hỏi để tôi có thể map lại.
 
 QUY TẮC JSON:
 - Trả về JSON thuần túy: {"questions": [{"id": "...", "text": "...", "choices": [...], "correctAnswer": "...", "solution": "..."}]}

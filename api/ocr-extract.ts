@@ -45,13 +45,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const examPrompt = `Bạn là giáo viên Việt Nam. Hãy phân tích nội dung đề thi và trích xuất tất cả câu hỏi.
 
 Yêu cầu:
-1. Trích xuất đầy đủ tất cả câu hỏi, bao gồm số câu, nội dung
-2. Với câu trắc nghiệm: trích xuất đủ 4 lựa chọn A/B/C/D và đáp án đúng (nếu có)
-3. Với câu tự luận/điền khuyết: trích xuất đầy đủ đề bài
-4. Phân số viết dạng a/b
-5. Xác định môn học, lớp, tiêu đề đề thi nếu có
-6. Viết lời giải chi tiết cho từng câu vào trường "solution"
-7. Hỗ trợ: Toán, Tiếng Việt, Khoa học, Lịch sử, Địa lý, Tiếng Anh...
+1. Trích xuất đầy đủ tất cả câu hỏi, bao gồm số câu, nội dung.
+2. Với câu trắc nghiệm: trích xuất đủ 4 lựa chọn A/B/C/D và đáp án đúng (nếu có).
+3. Với câu tự luận/điền khuyết: trích xuất đầy đủ đề bài.
+4. PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết phân số dưới dạng a/b (ví dụ: 3/4, 1/2) trong mọi nội dung, các lựa chọn và phần solution. Không viết phân số dưới dạng LaTeX hay hiển thị cùng một dòng.
+5. Xác định môn học, lớp, tiêu đề đề thi nếu có.
+6. Viết lời giải chi tiết cho từng câu vào trường "solution". Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là Toán hoặc có liên quan tính toán: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là Tiếng Anh hoặc Ngoại ngữ: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
+7. Hỗ trợ nhiều môn học: Toán, Tiếng Việt, Khoa học, Lịch sử, Địa lý, Tiếng Anh...
 
 QUY TẮC JSON:
 - Trả về JSON thuần túy, không có markdown.
@@ -59,7 +62,7 @@ QUY TẮC JSON:
 - Đảm bảo tất cả dấu ngoặc kép bên trong chuỗi được thoát (escaped) bằng \\".
 
 Trả lời CHÍNH XÁC theo JSON sau:
-{"title":"Tên đề thi","subject":"Môn học","grade":"Lớp X","duration":40,"totalPoints":10,"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"Mô tả","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Nội dung câu hỏi","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải thích..."}]}]}`;
+{"title":"Tên đề thi","subject":"Môn học","grade":"Lớp X","duration":40,"totalPoints":10,"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"Mô tả","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Nội dung câu hỏi","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải chi tiết... \\n💡 Mẹo nhỏ cho bé tránh ẩu tả: Hãy kiểm tra kỹ xem tử số có nhỏ hơn mẫu số không nhé!"}]}]}`;
 
   try {
     const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";

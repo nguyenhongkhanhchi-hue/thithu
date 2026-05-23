@@ -109,11 +109,10 @@ interface TextWithFractionsProps {
 export const TextWithFractions: React.FC<TextWithFractionsProps> = ({ text, className }) => {
   const lines = text.split('\n');
   return (
-    <span className={className} style={{ lineHeight: '2.5' }}>
+    <span className={`block ${className || ''}`} style={{ lineHeight: '1.8' }}>
       {lines.map((line, i) => (
-        <span key={i} className="inline-block min-h-[1.5em] align-middle">
+        <span key={i} className="block min-h-[1.2em] my-1 text-slate-800">
           {renderWithFractions(line)}
-          {i < lines.length - 1 && <br />}
         </span>
       ))}
     </span>

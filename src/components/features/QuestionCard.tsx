@@ -24,6 +24,54 @@ interface QuestionCardProps {
   parentScoreMode?: boolean;
 }
 
+// Smart solution parser for kid-friendly tips ("💡 Mẹo")
+const renderSolution = (solutionText: string) => {
+  const parts = solutionText.split(/💡\s*Mẹo/i);
+  if (parts.length < 2) {
+    return (
+      <div className="font-serif text-slate-800 leading-relaxed">
+        <TextWithFractions text={solutionText} />
+      </div>
+    );
+  }
+
+  const mainSolution = parts[0].trim();
+  // Restore the "💡 Mẹo" prefix to whatever tip was split
+  const tipText = "💡 Mẹo" + parts.slice(1).join("💡 Mẹo").trim();
+
+  return (
+    <div className="space-y-3.5">
+      {mainSolution && (
+        <div className="font-serif text-slate-800 bg-white/40 p-2 rounded-xl leading-relaxed">
+          <TextWithFractions text={mainSolution} />
+        </div>
+      )}
+      
+      {/* Premium Glow Amber Tip Box Card */}
+      <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 border-2 border-amber-300 rounded-2xl p-4 shadow-md relative overflow-hidden flex gap-3 items-start animate-fade-in">
+        {/* Decorative background icon */}
+        <div className="absolute right-[-10px] bottom-[-10px] text-7xl opacity-10 select-none pointer-events-none transform rotate-12">
+          💡
+        </div>
+        
+        {/* Animated bulb emoji icon */}
+        <div className="text-3xl shrink-0 filter drop-shadow select-none animate-bounce">
+          💡
+        </div>
+        
+        <div className="space-y-1 z-10 flex-1">
+          <p className="font-extrabold text-amber-800 text-[14px]" style={{ fontFamily: "'Baloo 2', cursive" }}>
+            HỘP QUÀ MẸO HAY CHO BÉ:
+          </p>
+          <div className="text-[13px] text-amber-900 font-semibold leading-relaxed">
+            <TextWithFractions text={tipText} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const QuestionCard: React.FC<QuestionCardProps> = ({
   question,
   answer,
@@ -103,12 +151,20 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       <div className={`p-4 ${drawMode ? "select-none" : ""}`}>
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-3">
-          <p className="font-semibold text-gray-800 text-[15px] leading-snug flex-1">
-            <span className="text-blue-600 mr-1.5 font-bold">
-              {labelPrefix}
-            </span>
-            <TextWithFractions text={question.text} />
-          </p>
+          <div className="flex-1">
+            <p className="font-semibold text-gray-800 text-[15px] leading-snug">
+              <span className="text-blue-600 mr-1.5 font-bold">
+                {labelPrefix}
+              </span>
+              <TextWithFractions text={question.text} />
+            </p>
+            {question.category && (
+              <div className="mt-2 inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider select-none">
+                <span>🎯 Dạng bài:</span>
+                <span>{question.category}</span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 shrink-0">
             {showResult && scoreInfo && (
               <span
@@ -128,6 +184,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </span>
           </div>
         </div>
+
+        {/* SVG Illustration if available */}
+        {question.illustrationSvg && (
+          <div className="my-4 bg-slate-50 border-2 border-slate-200/60 rounded-2xl p-4 flex items-center justify-center overflow-x-auto shadow-inner select-none relative group max-w-full">
+            <div 
+              className="w-full flex justify-center items-center [&_svg]:max-w-full [&_svg]:h-auto [&_svg]:block [&_svg]:mx-auto"
+              dangerouslySetInnerHTML={{ __html: question.illustrationSvg }}
+            />
+          </div>
+        )}
 
         {/* Multiple choice */}
         {question.type === "multiple_choice" && question.choices && (
@@ -197,13 +263,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   </span>
                 </button>
                 {showSolution && (
-                  <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-900 leading-relaxed whitespace-pre-line">
-                    <p className="font-bold text-blue-700 mb-1">
-                      📖 Lời giải chi tiết:
+                  <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-sm text-blue-900 leading-relaxed whitespace-pre-line">
+                    <p className="font-extrabold text-blue-700 mb-1.5 flex items-center gap-1.5" style={{ fontFamily: "'Baloo 2', cursive" }}>
+                      📖 LỜI GIẢI CHI TIẾT:
                     </p>
-                    <div className="font-serif">
-                      <TextWithFractions text={question.solution || ""} />
-                    </div>
+                    {renderSolution(question.solution || "")}
                   </div>
                 )}
               </div>
@@ -221,8 +285,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               isCorrect === true &&
               hasSolution &&
               showSolution && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-900 leading-relaxed whitespace-pre-line font-serif">
-                  <TextWithFractions text={question.solution || ""} />
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-sm text-emerald-900 leading-relaxed whitespace-pre-line">
+                  <p className="font-extrabold text-emerald-700 mb-1.5 flex items-center gap-1.5" style={{ fontFamily: "'Baloo 2', cursive" }}>
+                    🎉 GIẢI THÍCH CHI TIẾT:
+                  </p>
+                  {renderSolution(question.solution || "")}
                 </div>
               )}
           </div>
@@ -242,7 +309,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   value={essayText}
                   onChange={handleEssayChange}
                   placeholder="Viết lời giải vào đây..."
-                  rows={localEssayLines ? Math.max(4, localEssayLines) : 5}
+                  questionId={question.id}
+                  subject={question.category || ''}
                 />
                 <button
                   onClick={() => setLocalEssayLines((v) => (v ?? 5) + 3)}
@@ -281,11 +349,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                       </span>
                     </button>
                     {showSolution && (
-                      <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-900 leading-relaxed whitespace-pre-line font-serif">
-                        <p className="font-bold text-blue-700 mb-1.5">
-                          📝 Lời giải mẫu:
+                      <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-sm text-blue-900 leading-relaxed whitespace-pre-line">
+                        <p className="font-extrabold text-blue-700 mb-1.5 flex items-center gap-1.5" style={{ fontFamily: "'Baloo 2', cursive" }}>
+                          📝 LỜI GIẢI MẪU CHI TIẾT:
                         </p>
-                        <TextWithFractions text={question.solution || ""} />
+                        {renderSolution(question.solution || "")}
                       </div>
                     )}
                   </div>

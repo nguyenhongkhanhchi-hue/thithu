@@ -21,6 +21,8 @@ export interface Question {
   points: number;
   hint?: string;
   solution?: string;
+  category?: string;
+  illustrationSvg?: string;
 }
 
 export interface ExamSection {
@@ -79,6 +81,20 @@ export interface LibraryQuestion {
   subject: string;
   question: Question;
   studentAnswer?: string;
+  savedAt: string;
+}
+
+export interface WrongQuestion {
+  id: string;
+  originalQuestionId: string;
+  examId: string;
+  examTitle: string;
+  subject: string;
+  grade: string;
+  question: Question;
+  studentAnswer?: string;
+  correctAnswer?: string;
+  correctCount: number;
   savedAt: string;
 }
 

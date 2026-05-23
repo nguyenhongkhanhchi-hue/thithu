@@ -29,7 +29,7 @@ const LocalModeLogin: React.FC = () => {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-6xl mb-3">✏️</div>
-          <h1 className="text-3xl font-bold text-white">ExamTouch</h1>
+          <h1 className="text-3xl font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Baloo 2', cursive" }}>MÊ THI</h1>
           <p className="text-blue-200 text-sm mt-1">
             Chế độ cục bộ (Local Mode)
           </p>
@@ -201,7 +201,7 @@ const LoginPage: React.FC = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-3">✏️</div>
-          <h1 className="text-3xl font-bold text-white">ExamTouch</h1>
+          <h1 className="text-3xl font-black text-white uppercase tracking-wider" style={{ fontFamily: "'Baloo 2', cursive" }}>MÊ THI</h1>
           <p className="text-blue-200 text-sm mt-1">
             Ứng dụng thi cảm ứng thông minh
           </p>

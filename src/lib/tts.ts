@@ -1,235 +1,181 @@
 /**
- * tts.ts — Text-to-Speech với hỗ trợ song ngữ Việt-Anh
- * Dùng Web Speech API của browser (miễn phí, không cần API key)
- * Tính năng đặc biệt: tự động nhận diện đoạn tiếng Việt vs tiếng Anh
- * và dùng 2 giọng đọc khác nhau
+ * Trợ Lý Giọng Nói Bố Tommy (Daddy's Speech Synthesis Engine)
+ * Sử dụng Web Speech API (SpeechSynthesis) có sẵn trên iOS/Android/Windows 
+ * để phát giọng đọc tiếng Việt động viên bé yêu học tập.
  */
 
-export interface VoiceSettings {
-  viVoiceName: string;   // tên giọng tiếng Việt
-  enVoiceName: string;   // tên giọng tiếng Anh
-  rate: number;          // 0.5 - 2.0, default 0.9
-  pitch: number;         // 0.5 - 2.0, default 1.0
-  volume: number;        // 0 - 1, default 1.0
-  bilingual: boolean;    // true = dùng 2 giọng, false = chỉ dùng tiếng Việt
+export interface TTSSettings {
+  enabled: boolean;
+  rate: number;      // Tốc độ nói: 0.8 - 1.2
+  pitch: number;     // Độ cao giọng: 0.9 - 1.1
+  childName: string; // Tên của bé ví dụ: "Vy", "Na"
+  daddyName: string; // Tên bố: "bố Tommy" hoặc "bố"
+  remoteMessage: string; // Lời nhắn từ xa của bố gửi lên Supabase
+  remoteMessageRead: boolean; // Trạng thái đã đọc lời nhắn
 }
 
-export const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
-  viVoiceName: '',
-  enVoiceName: '',
-  rate: 0.9,
+const SETTINGS_KEY = "methi_tts_settings";
+
+const DEFAULT_SETTINGS: TTSSettings = {
+  enabled: true,
+  rate: 0.95, // Nói chậm rãi, dễ nghe cho trẻ em
   pitch: 1.0,
-  volume: 1.0,
-  bilingual: false,
+  childName: "",
+  daddyName: "bố Tommy",
+  remoteMessage: "",
+  remoteMessageRead: false,
 };
 
-const VOICE_SETTINGS_KEY = 'examtouch_voice_settings';
-
-export function loadVoiceSettings(): VoiceSettings {
+export function getTTSSettings(): TTSSettings {
   try {
-    const stored = localStorage.getItem(VOICE_SETTINGS_KEY);
-    if (stored) return { ...DEFAULT_VOICE_SETTINGS, ...JSON.parse(stored) };
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export function saveTTSSettings(settings: Partial<TTSSettings>): void {
+  try {
+    const current = getTTSSettings();
+    const updated = { ...current, ...settings };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
   } catch {}
-  return { ...DEFAULT_VOICE_SETTINGS };
 }
 
-export function saveVoiceSettings(s: VoiceSettings): void {
-  localStorage.setItem(VOICE_SETTINGS_KEY, JSON.stringify(s));
+/**
+ * Tìm giọng đọc Tiếng Việt tốt nhất có sẵn trên thiết bị
+ */
+function getVietnameseVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices();
+  
+  // Ưu tiên tìm giọng đọc vi-VN tiếng Việt
+  const viVoice = voices.find(v => v.lang.toLowerCase().includes("vi"));
+  if (viVoice) return viVoice;
+  
+  // Fallback sang các giọng đọc Google Việt Nam hoặc mặc định nếu có
+  const googleVi = voices.find(v => v.name.includes("Google") && v.lang.includes("vi"));
+  return googleVi || voices[0] || null;
 }
 
-/** Lấy danh sách voices có sẵn trong browser */
-export function getAvailableVoices(): SpeechSynthesisVoice[] {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return [];
-  return window.speechSynthesis.getVoices();
-}
-
-export function getVietnameseVoices(): SpeechSynthesisVoice[] {
-  return getAvailableVoices().filter(
-    (v) =>
-      v.lang.startsWith('vi') ||
-      v.name.toLowerCase().includes('viet') ||
-      v.name.toLowerCase().includes('vi-')
-  );
-}
-
-export function getEnglishVoices(): SpeechSynthesisVoice[] {
-  return getAvailableVoices().filter((v) => v.lang.startsWith('en'));
-}
-
-// ── Bilingual text splitting ──────────────────────────────────────────────────
-
-/** Các từ tiếng Anh phổ biến trong giáo dục Việt Nam */
-const ENGLISH_EDUCATION_TERMS = new Set([
-  // Math / Science
-  'fraction', 'equation', 'formula', 'method', 'step', 'solution', 'answer',
-  'triangle', 'circle', 'square', 'rectangle', 'angle', 'area', 'volume',
-  'perimeter', 'radius', 'diameter', 'parallel', 'perpendicular', 'hypotenuse',
-  'theorem', 'proof', 'function', 'variable', 'constant', 'coefficient',
-  'numerator', 'denominator', 'integer', 'decimal', 'percentage',
-  'addition', 'subtraction', 'multiplication', 'division',
-  'atom', 'molecule', 'cell', 'gene', 'protein', 'chromosome',
-  'element', 'compound', 'reaction', 'catalyst', 'acid', 'base',
-  'force', 'velocity', 'acceleration', 'gravity', 'mass', 'energy',
-  'voltage', 'current', 'resistance', 'circuit', 'frequency', 'wave',
-  // English words commonly used in Vietnamese teaching
-  'okay', 'ok', 'yes', 'no', 'note', 'example', 'practice', 'homework',
-  'vocabulary', 'grammar', 'pronunciation', 'spelling',
-  'map', 'chart', 'graph', 'table', 'diagram',
-  'input', 'output', 'data', 'code', 'program', 'algorithm',
-  'score', 'point', 'level', 'rank', 'test', 'quiz',
-  // Common English adjectives/adverbs
-  'important', 'special', 'basic', 'advanced', 'simple', 'complex',
-  'first', 'second', 'third', 'final', 'total', 'sum',
-]);
-
-/** Các ký tự đặc trưng tiếng Việt có dấu */
-const VI_DIACRITICS =
-  /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỗƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸĐ]/;
-
-/** Nhận diện ngôn ngữ một từ */
-function detectWordLang(word: string): 'vi' | 'en' {
-  // Chắc chắn là tiếng Việt nếu có ký tự dấu
-  if (VI_DIACRITICS.test(word)) return 'vi';
-  // Số, ký tự toán học → đọc theo ngữ cảnh tiếng Việt
-  if (/^[\d\+\-\×÷\*\/\=\.\,\%\(\)\[\]\{\}]+$/.test(word)) return 'vi';
-  // Chỉ lấy phần chữ cái
-  const letters = word.toLowerCase().replace(/[^a-z]/g, '');
-  if (letters.length === 0) return 'vi';
-  // Từ quá ngắn (1-2 ký tự) → mặc định tiếng Việt
-  if (letters.length <= 2) return 'vi';
-  // Kiểm tra từ điển tiếng Anh
-  if (ENGLISH_EDUCATION_TERMS.has(letters)) return 'en';
-  // Mặc định tiếng Việt
-  return 'vi';
-}
-
-export interface TextSegment {
-  lang: 'vi' | 'en';
-  text: string;
-}
-
-/** Chia text thành các đoạn vi/en xen kẽ */
-export function splitBilingualText(text: string): TextSegment[] {
-  if (!text.trim()) return [];
-
-  const segments: TextSegment[] = [];
-  const tokens = text.split(/(\s+)/);
-
-  let currentLang: 'vi' | 'en' | null = null;
-  let currentText = '';
-
-  for (const token of tokens) {
-    // Khoảng trắng
-    if (/^\s+$/.test(token)) {
-      currentText += token;
-      continue;
-    }
-
-    const lang = detectWordLang(token);
-
-    if (lang === currentLang) {
-      currentText += token;
-    } else {
-      if (currentText.trim() && currentLang) {
-        segments.push({ lang: currentLang, text: currentText });
-      } else if (currentText && !currentText.trim()) {
-        if (segments.length > 0) segments[segments.length - 1].text += currentText;
-      }
-      currentLang = lang;
-      currentText = token;
-    }
+/**
+ * Phát âm đoạn văn bản tiếng Việt
+ */
+export function speak(text: string): void {
+  const settings = getTTSSettings();
+  if (!settings.enabled || typeof window === "undefined" || !window.speechSynthesis) {
+    return;
   }
 
-  if (currentText.trim() && currentLang) {
-    segments.push({ lang: currentLang, text: currentText });
-  }
-
-  return segments.filter((s) => s.text.trim() !== '');
-}
-
-// ── TTS Engine ────────────────────────────────────────────────────────────────
-
-let currentUtterances: SpeechSynthesisUtterance[] = [];
-
-export function stopSpeaking(): void {
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
+  try {
+    // Dừng tất cả các giọng đọc đang phát dở để phát câu mới lập tức
     window.speechSynthesis.cancel();
-  }
-  currentUtterances = [];
-}
 
-export function isSpeaking(): boolean {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return false;
-  return !!window.speechSynthesis.speaking;
-}
-
-function findVoice(name: string, lang: string): SpeechSynthesisVoice | null {
-  const voices = getAvailableVoices();
-  if (name) {
-    const byName = voices.find((v) => v.name === name);
-    if (byName) return byName;
-  }
-  return voices.find((v) => v.lang.startsWith(lang)) || null;
-}
-
-export function speakText(
-  text: string,
-  settings: VoiceSettings,
-  onEnd?: () => void
-): void {
-  stopSpeaking();
-  if (!text.trim()) {
-    onEnd?.();
-    return;
-  }
-
-  if (typeof window === 'undefined') {
-    onEnd?.();
-    return;
-  }
-
-  const synth = window.speechSynthesis;
-  if (!synth) {
-    onEnd?.();
-    return;
-  }
-
-  const segments = settings.bilingual
-    ? splitBilingualText(text)
-    : [{ lang: 'vi' as const, text }];
-
-  const filteredSegments = segments.filter((s) => s.text.trim() !== '');
-  if (filteredSegments.length === 0) {
-    onEnd?.();
-    return;
-  }
-
-  let idx = 0;
-
-  const speakNext = () => {
-    if (idx >= filteredSegments.length) {
-      onEnd?.();
-      return;
-    }
-    const seg = filteredSegments[idx++];
-    const utterance = new SpeechSynthesisUtterance(seg.text);
-
-    const voice =
-      seg.lang === 'en'
-        ? findVoice(settings.enVoiceName, 'en')
-        : findVoice(settings.viVoiceName, 'vi');
-
+    // Tạo đối tượng đọc
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Cấu hình giọng đọc tiếng Việt
+    const voice = getVietnameseVoice();
     if (voice) utterance.voice = voice;
-    utterance.lang = seg.lang === 'en' ? 'en-US' : 'vi-VN';
+    utterance.lang = "vi-VN";
     utterance.rate = settings.rate;
     utterance.pitch = settings.pitch;
-    utterance.volume = settings.volume;
-    utterance.onend = speakNext;
-    utterance.onerror = speakNext;
 
-    currentUtterances.push(utterance);
-    synth.speak(utterance);
-  };
+    window.speechSynthesis.speak(utterance);
+  } catch (err) {
+    console.error("Speech Synthesis failed:", err);
+  }
+}
 
-  speakNext();
+// Gọi giọng đọc load trước danh sách giọng (đặc biệt cần trên Chrome/Safari)
+if (typeof window !== "undefined" && window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      getVietnameseVoice();
+    };
+  }
+}
+
+// ── Các kịch bản giọng nói cụ thể dành cho bé ──
+
+/**
+ * 1. Chào hỏi khi vào app và phát lời nhắn từ xa của Bố nếu có
+ */
+export function speakAppGreeting(): void {
+  const settings = getTTSSettings();
+  const nameSuffix = settings.childName ? ` ${settings.childName}` : " con";
+  const daddy = settings.daddyName || "bố";
+  
+  let greetingText = `Chào ${settings.childName ? settings.childName : "con gái yêu"} của ${daddy}! Hôm nay con muốn cùng ${daddy} chinh phục đề thi nào nào? Thi nhiều là giỏi con nhé!`;
+  
+  // Nếu có tin nhắn mới từ xa của bố Tommy
+  if (settings.remoteMessage && !settings.remoteMessageRead) {
+    greetingText = `Ting ting! ${settings.childName ? settings.childName : "Bé yêu"} ơi, có một lời nhắn yêu thương từ ${daddy} gửi từ xa cho con nè: "${settings.remoteMessage}"! Hãy học tập thật chăm chỉ con nhé!`;
+    
+    // Đánh dấu là đã đọc lời nhắn
+    saveTTSSettings({ remoteMessageRead: true });
+  }
+  
+  speak(greetingText);
+}
+
+/**
+ * 2. Động viên khi con bắt đầu bước vào phòng thi
+ */
+export function speakExamStart(examTitle: string): void {
+  const settings = getTTSSettings();
+  const nameSuffix = settings.childName ? ` ${settings.childName}` : " con";
+  const daddy = settings.daddyName || "bố";
+
+  const prompts = [
+    `Đề thi ${examTitle} bắt đầu rồi! ${settings.childName ? settings.childName : "Con gái yêu"} đọc kỹ từng câu, dùng nháp tính toán thật cẩn thận bên cạnh rồi hãy chọn đáp án nhé! Cố lên con!`,
+    `Học nhiều là giỏi! Đề thi này sẽ giúp${nameSuffix} thông minh hơn nữa. Hãy làm bài thật tập trung và không vội vàng nha! ${daddy} luôn tin tưởng con.`,
+    `Bắt đầu làm bài nào ${settings.childName ? settings.childName : "bé yêu"}! Nhớ xem kỹ các bẫy đổi đơn vị toán học trên giấy nháp rồi mới chọn nha!`
+  ];
+
+  const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+  speak(randomPrompt);
+}
+
+/**
+ * 3. Khen ngợi hoặc động viên dựa trên kết quả bài thi sau khi nộp
+ */
+export function speakExamScore(score: number, totalPoints: number): void {
+  const settings = getTTSSettings();
+  const nameSuffix = settings.childName ? ` ${settings.childName}` : " con";
+  const daddy = settings.daddyName || "bố";
+  const percentage = Math.round((score / totalPoints) * 100);
+
+  let speechText = "";
+
+  if (percentage >= 90) {
+    speechText = `Trời ơi! ${settings.childName ? settings.childName : "Con gái yêu của bố"} quá xuất sắc! Đạt được tận ${score} trên ${totalPoints} điểm! Kết quả tuyệt vời thế này làm ${daddy} hạnh phúc vô cùng! Quá tự hào về con!`;
+  } else if (percentage >= 80) {
+    speechText = `Quá tuyệt vời! ${score} điểm là một điểm số rất cao đó${nameSuffix}! Con làm bài rất tiến bộ, ${daddy} khen ngợi sự tập trung của con gái yêu nha!`;
+  } else if (percentage >= 50) {
+    speechText = `Con đã hoàn thành bài thi rồi đó${nameSuffix}! Được ${score} điểm. Con làm tốt lắm, nhưng lần sau nhớ tính nháp cẩn thận hơn một chút nữa để đạt điểm mười tuyệt đối nha! Cố lên con yêu!`;
+  } else {
+    speechText = `Không sao đâu ${settings.childName ? settings.childName : "con yêu"}! ${daddy} luôn ở bên cạnh động viên con. Con hãy bấm nút xem lời giải mẫu chi tiết của AI và các mẹo hay, sau đó làm lại nhé! Thi nhiều chắc chắn sẽ giỏi mà!`;
+  }
+
+  speak(speechText);
+}
+
+/**
+ * 4. Khen ngợi khi hoàn thành game ôn tập
+ */
+export function speakGameVictory(gameMode: string): void {
+  const settings = getTTSSettings();
+  const nameSuffix = settings.childName ? ` ${settings.childName}` : " con";
+  const daddy = settings.daddyName || "bố";
+
+  const prompts = [
+    `Quá xuất sắc! Trò chơi ôn tập ${gameMode} không thể làm khó được ${settings.childName ? settings.childName : "bé yêu"} của ${daddy} rồi! Con được cộng năm mươi điểm XP và một sao vàng lấp lánh nha!`,
+    `Tuyệt vời ông mặt trời! ${settings.childName ? settings.childName : "Con gái yêu"} của ${daddy} vừa thắng trò chơi ôn tập rồi! Chơi vui mà lại học giỏi nữa, bố yêu con nhiều!`,
+  ];
+
+  const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+  speak(randomPrompt);
 }

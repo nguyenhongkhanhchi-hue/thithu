@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Brain, Sparkles, Wand2, ChevronRight, Info, Upload, Image as ImageIcon, FileText } from "lucide-react";
 import { Difficulty, Exam, DIFFICULTY_INFO } from "@/types/exam";
-import { getExams, saveExam, setSourceExam, generateId } from "@/lib/storage";
+import { getExams, saveExam, setSourceExam, generateId, getWrongQuestions } from "@/lib/storage";
 import { SUBJECTS, ALL_GRADES } from "@/constants/exams";
 import { generateExam, getCreditsRemaining } from "@/lib/gemini";
 import { toast } from "sonner";
@@ -26,11 +26,37 @@ const AICreatePage: React.FC = () => {
   const [selectedSourceExamId, setSelectedSourceExamId] = useState<string>("");
   const [selectedQuestionCount, setSelectedQuestionCount] = useState(10);
 
+  // Focused Category states
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedFocusedCategory, setSelectedFocusedCategory] = useState<string>("");
+  const [customCategory, setCustomCategory] = useState<string>("");
+
   const exams = getExams();
   const sourceExams = exams.filter((e) => e.isSourceExam);
 
   useEffect(() => {
     setCredits(getCreditsRemaining());
+    
+    // Load categories
+    try {
+      const wrongQs = getWrongQuestions();
+      const uniqueCats = new Set<string>();
+      
+      wrongQs.forEach(q => {
+        if (q.question.category) uniqueCats.add(q.question.category);
+      });
+      
+      // Default recommended categories
+      const defaults = [
+        "Tìm x", "Cộng trừ phân số", "Diện tích hình học", "Giải toán có lời văn",
+        "Từ vựng tiếng Anh", "Đọc hiểu tiếng Anh", "Ngữ pháp tiếng Anh", "Lịch sử hào hùng"
+      ];
+      defaults.forEach(d => uniqueCats.add(d));
+      
+      setCategories(Array.from(uniqueCats));
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   const openFilePicker = (mode: 'camera' | 'file') => {
@@ -77,16 +103,19 @@ const AICreatePage: React.FC = () => {
       setIsGenerating(true);
       toast.loading("AI đang miệt mài soạn đề cho bé...");
 
+      const finalFocusedCategory = selectedFocusedCategory === "custom" ? customCategory : selectedFocusedCategory;
       const sections = await generateExam(
         sourceExamObj as any,
         selectedDifficulty,
-        selectedQuestionCount
+        selectedQuestionCount,
+        finalFocusedCategory || undefined
       );
 
       const newExamId = generateId();
+      const titleSuffix = finalFocusedCategory ? ` - Chuyên đề ${finalFocusedCategory}` : "";
       const newExam: Exam = {
         id: newExamId,
-        title: `Đề ${selectedSubject} ${selectedGrade} - ${DIFFICULTY_INFO[selectedDifficulty].label} (AI)`,
+        title: `Đề ${selectedSubject} ${selectedGrade} - ${DIFFICULTY_INFO[selectedDifficulty].label}${titleSuffix} (AI)`,
         subject: selectedSubject,
         grade: selectedGrade,
         duration: 40,
@@ -114,21 +143,23 @@ const AICreatePage: React.FC = () => {
     <div className="min-h-screen bg-slate-50">
       {/* Header - Dynamic Color */}
       <div className={cn(
-        "text-white px-5 py-4 flex items-center justify-between sticky top-0 z-50 transition-colors duration-500",
-        activeMode === 'ai' ? "bg-indigo-600 shadow-lg shadow-indigo-100" : "bg-emerald-600 shadow-lg shadow-emerald-100"
+        "text-white py-4 sticky top-0 z-50 transition-colors duration-500 shadow-lg",
+        activeMode === 'ai' ? "bg-indigo-600 shadow-indigo-100" : "bg-emerald-600 shadow-emerald-100"
       )}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/")} className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-xl font-black font-heading tracking-tight uppercase">Tạo Đề Thi Mới</h1>
-        </div>
-        <div className="bg-white/20 px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest flex items-center gap-1.5 backdrop-blur-md">
-          <Brain className="w-3.5 h-3.5" /> {credits} LƯỢT HÔM NAY
+        <div className="w-full px-4 sm:px-8 lg:px-12 flex items-center justify-between gap-4 w-full">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate("/")} className="p-2.5 bg-white/10 hover:bg-white/20 rounded-2xl transition-all active:scale-90">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-black font-heading tracking-tight uppercase" style={{ fontFamily: "'Baloo 2', cursive" }}>Tạo Đề Thi Mới</h1>
+          </div>
+          <div className="bg-white/20 px-4 py-2 rounded-full text-xs font-black tracking-widest flex items-center gap-1.5 backdrop-blur-md">
+            <Brain className="w-4 h-4" /> {credits} LƯỢT HÔM NAY
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-8 mt-2">
+      <div className="w-full px-4 sm:px-8 lg:px-12 py-6 space-y-8 mt-2">
         {/* Mode Selection Landing - Bigger and Better */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <button
@@ -297,6 +328,49 @@ const AICreatePage: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                </div>
+              </div>
+
+              {/* Section 4: Luyện tập chuyên sâu theo dạng bài (Tùy chọn) */}
+              <div className="md:col-span-2 bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-black">4</div>
+                  <h3 className="font-black text-gray-800 uppercase tracking-widest text-sm">🎯 LUYỆN TẬP CHUYÊN SÂU THEO DẠNG BÀI</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Chọn Dạng Bài Cần Ôn</label>
+                    <select
+                      value={selectedFocusedCategory}
+                      onChange={(e) => {
+                        setSelectedFocusedCategory(e.target.value);
+                        if (e.target.value !== "custom") {
+                          setCustomCategory("");
+                        }
+                      }}
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-indigo-400 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="">-- Không giới hạn (Đề thi hỗn hợp) --</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>🎯 {cat}</option>
+                      ))}
+                      <option value="custom">✏️ Nhập dạng bài khác...</option>
+                    </select>
+                  </div>
+
+                  {selectedFocusedCategory === "custom" && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Nhập Dạng Bài Tự Chọn</label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Toán tìm x lớp 4, Phép chia 2 chữ số..."
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-3 font-bold text-gray-700 outline-none focus:border-indigo-400 transition-all"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,12 +1,12 @@
 {
-  "name": "ExamTouch - Ứng dụng thi cảm ứng",
-  "short_name": "ExamTouch",
-  "description": "Thi bằng bút cảm ứng · AI tạo đề · Kết quả tức thì",
+  "name": "MÊ THI - Thi Nhiều Là Giỏi",
+  "short_name": "Mê Thi",
+  "description": "Ứng dụng luyện đề và thi thông minh giúp bé học tốt hơn mỗi ngày. Thi nhiều là giỏi!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
-  "orientation": "portrait",
+  "orientation": "any",
   "icons": [
     {
       "src": "/icon-192.png",

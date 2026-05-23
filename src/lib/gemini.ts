@@ -22,7 +22,10 @@ const GEMINI_MODEL = (import.meta as any).env?.VITE_GEMINI_MODEL || "gemini-2.5-
 const GEMINI_KEYS = (): string[] => {
   try {
     const stored = localStorage.getItem("VITE_GEMINI_API_KEYS");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
     const single = (localStorage.getItem("VITE_GEMINI_API_KEY") || (import.meta as any).env?.VITE_GEMINI_API_KEY) as string;
     return single ? [single] : [];
   } catch { return []; }
@@ -31,7 +34,10 @@ const GEMINI_KEYS = (): string[] => {
 const GROQ_KEYS = (): string[] => {
   try {
     const stored = localStorage.getItem("VITE_GROQ_API_KEYS");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
     const single = (localStorage.getItem("VITE_GROQ_API_KEY") || (import.meta as any).env?.VITE_GROQ_API_KEY) as string;
     return single ? [single] : [];
   } catch { return []; }
@@ -40,7 +46,10 @@ const GROQ_KEYS = (): string[] => {
 const ONSPACE_KEYS = (): string[] => {
   try {
     const stored = localStorage.getItem("VITE_ONSPACE_AI_API_KEYS");
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
     const single = (localStorage.getItem("VITE_ONSPACE_AI_API_KEY") || (import.meta as any).env?.VITE_ONSPACE_AI_API_KEY) as string;
     return single ? [single] : [];
   } catch { return []; }
@@ -198,17 +207,26 @@ function buildExam(data: any, fallbackTitle: string): Exam {
 function ocrPrompt(context?: string): string {
   return `Bạn là giáo viên Việt Nam chuyên phân tích đề thi. Trích xuất tất cả câu hỏi.
 
-Yêu cầu:
-1. Trích xuất ĐẦY ĐỦ mọi câu hỏi (số câu, nội dung đầy đủ)
-2. Trắc nghiệm: 4 lựa chọn A/B/C/D, ghi đáp án đúng nếu có
-3. Tự luận/tính toán: trích xuất toàn bộ đề bài
-4. Phân số viết dạng a/b (vd: 3/4)
-5. Xác định môn học, lớp, tiêu đề đề thi
-6. Viết lời giải chi tiết từng bước vào trường "solution"
-7. Hỗ trợ: Toán, Văn, Anh, Lý, Hóa, Sinh, Sử, Địa, Tin học...
+Yêu cầu QUAN TRỌNG:
+1. Trích xuất ĐẦY ĐỦ mọi câu hỏi (số câu, nội dung đầy đủ).
+2. Trắc nghiệm: 4 lựa chọn A/B/C/D, ghi đáp án đúng nếu có.
+3. Tự luận/tính toán: trích xuất toàn bộ đề bài.
+4. PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết phân số dưới dạng a/b (ví dụ: 3/4, 1/2). Tuyệt đối không dùng LaTeX hoặc ký hiệu phân số của hệ thống khác để đảm bảo hiển thị 2 dòng tử và mẫu đẹp mắt.
+5. Xác định môn học, lớp, tiêu đề đề thi.
+6. Viết lời giải chi tiết từng bước vào trường "solution". Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là môn Toán: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là môn Tiếng Anh: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
+7. Hỗ trợ nhiều môn học: Toán, Văn, Anh, Lý, Hóa, Sinh, Sử, Địa, Tin học...
+8. PHÂN LOẠI DẠNG BÀI: Mỗi câu hỏi bắt buộc phải có thuộc tính "category" chứa dạng câu hỏi bằng tiếng Việt vô cùng ngắn gọn, dễ thương và thân thiện với trẻ em (Ví dụ: "Tìm x", "Cộng trừ phân số", "Diện tích hình tam giác", "Từ vựng tiếng Anh", "Đọc hiểu", "Lịch sử hào hùng").
+9. HÌNH MINH HỌA VECTOR (illustrationSvg): Bắt buộc vẽ hình minh họa bằng code SVG XML tự chứa (self-contained, bắt đầu bằng <svg> và kết thúc bằng </svg>, không chứa ký tự xuống dòng bên trong chuỗi JSON, sử dụng các thẻ như <rect>, <circle>, <line>, <polygon>, <text>, sử dụng các màu sắc tươi sáng, viền đậm rõ nét, kích thước viewBox="0 0 400 200" hoặc tương đương) đối với:
+   - Toàn bộ các câu hỏi Hình học (vẽ hình tam giác, hình tròn, góc, hình hộp,... có gắn nhãn các đỉnh A, B, C, D và số đo cạnh/góc cụ thể).
+   - Các câu hỏi từ vựng Tiếng Anh hoặc Toán tiểu học cần minh họa (vẽ quả táo, ngôi nhà, con mèo, cái cây,... đáng yêu, hoạt hình).
+   - Nếu câu hỏi không cần hình vẽ, hãy để thuộc tính "illustrationSvg" là chuỗi rỗng "".
+
 ${context ? "\n" + context : ""}
-Trả lời CHÍNH XÁC theo JSON sau (TUYỆT ĐỐI không có markdown, không có backtick):
-{"title":"Tên đề thi","subject":"Môn học","grade":"Lớp X","duration":40,"totalPoints":10,"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"Khoanh tròn đáp án đúng","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Câu hỏi","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải: ..."}]}]}`;
+Trả lời CHÍNH XÁC theo định dạng JSON sau (TUYỆT ĐỐI không có markdown, không có backtick):
+{"title":"Tên đề thi","subject":"Môn học","grade":"Lớp X","duration":40,"totalPoints":10,"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"Khoanh tròn đáp án đúng","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"Câu hỏi","category":"Dạng toán...","illustrationSvg":"","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải chi tiết... \\n💡 Mẹo nhỏ cho bé tránh ẩu tả: Hãy kiểm tra kỹ xem tử số có nhỏ hơn mẫu số không nhé!"}]}]}`;
 }
 
 // ── GROQ API helper (OpenAI-compatible) ───────────────────────────────────────
@@ -370,25 +388,34 @@ async function withOnSpaceRotation(
 
 // ── OnSpace fallback (dùng API nội bộ khi không có key riêng) ─────────────
 async function callInternalAI(fnName: string, body: any): Promise<any> {
+  // Thêm client API keys vào body để Edge Function dùng khi server không có secret
+  const enrichedBody = {
+    ...body,
+    clientGroqKey: GROQ_KEYS()[0] || "",
+    clientGeminiKey: GEMINI_KEYS()[0] || "",
+    clientOnspaceKey: ONSPACE_KEYS()[0] || "",
+  };
+
   try {
-    // Thử gọi Vercel API trước (để không phụ thuộc OnSpace)
+    // Thử gọi Vercel API trước (chỉ available ở production Vercel deployment)
     const res = await fetch(`/api/${fnName}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(enrichedBody),
     });
 
     if (res.ok) {
       const data = await res.json();
       return data;
     }
+    // 404 là bình thường ở dev local — bỏ qua và dùng Supabase
   } catch (e) {
-    /* fallback to supabase if vercel fails or not available */
+    /* fallback to supabase */
   }
 
   // Fallback dùng Supabase Edge Functions (OnSpace)
   const { supabase } = await import("@/lib/supabase");
-  const { data, error } = await supabase.functions.invoke(fnName, { body });
+  const { data, error } = await supabase.functions.invoke(fnName, { body: enrichedBody });
 
   if (error) {
     let errorMsg = error.message || JSON.stringify(error);
@@ -398,7 +425,9 @@ async function callInternalAI(fnName: string, body: any): Promise<any> {
     ) {
       try {
         const details = await (error as any).context.text();
-        if (details) errorMsg = details;
+        if (details) {
+          try { errorMsg = JSON.parse(details)?.error || details; } catch { errorMsg = details; }
+        }
       } catch {}
     }
     throw new Error(`AI Service (${fnName}): ${errorMsg}`);
@@ -411,6 +440,7 @@ async function callInternalAI(fnName: string, body: any): Promise<any> {
   if (!data) throw new Error(`AI Service (${fnName}): Không có dữ liệu trả về`);
   return data;
 }
+
 
 // ── OCR từ ẢNH / PDF (base64) — Gemini ưu tiên ─────────────
 export async function ocrFromImage(
@@ -535,6 +565,7 @@ export async function generateExam(
   sourceExam: Partial<Exam> & { subject: string; grade: string },
   difficulty: Difficulty,
   questionCount?: number,
+  focusedCategory?: string,
 ): Promise<ExamSection[]> {
   const groqKeys = GROQ_KEYS();
   const geminiKeys = GEMINI_KEYS();
@@ -545,6 +576,7 @@ export async function generateExam(
       sourceExam,
       difficulty,
       questionCount,
+      focusedCategory,
     });
     if (data?.exam?.sections) {
       return data.exam.sections;
@@ -574,6 +606,10 @@ export async function generateExam(
     ? `Tạo ĐÚNG ${questionCount} câu (không hơn không kém).`
     : "Giữ nguyên số câu như đề gốc.";
 
+  const categoryInstruction = focusedCategory
+    ? `BẮT BUỘC: Toàn bộ đề thi phải tập trung ôn luyện một dạng bài duy nhất là: "${focusedCategory}". Mọi câu hỏi được sinh ra phải cùng dạng bài này nhưng có độ khó tăng dần để con Mỹ Linh luyện tập nhuần nhuyễn.`
+    : "Biên soạn các câu hỏi đa dạng dựa trên đề gốc hoặc kiến thức chuẩn.";
+
   const prompt = `Bạn là giáo viên ${sourceExam.subject} ${sourceExam.grade} Việt Nam chuyên nghiệp.
 Tạo một đề thi mới dựa theo cấu trúc đề gốc.
 
@@ -585,13 +621,24 @@ ${sourceQs.length > 0 ? "Câu hỏi gốc tham chiếu:\n" + sourceQs.join("\n")
 
 YÊU CẦU BẮT BUỘC:
 - ${countNote}
-- Thay đổi HOÀN TOÀN số liệu, tên nhân vật, bối cảnh
-- Trắc nghiệm: đúng 4 lựa chọn A/B/C/D + correctAnswer
-- Mỗi câu phải có "solution" lời giải chi tiết từng bước
-- Đúng chương trình Việt Nam
+- ${categoryInstruction}
+- Thay đổi HOÀN TOÀN số liệu, tên nhân vật, bối cảnh.
+- Trắc nghiệm: đúng 4 lựa chọn A/B/C/D + correctAnswer.
+- Mỗi câu phải có "solution" lời giải chi tiết từng bước.
+- Đúng chương trình Việt Nam.
+- PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết tất cả các phân số dưới dạng a/b (ví dụ: 3/4, 2/5) trong câu hỏi, các lựa chọn và phần solution để hệ thống hiển thị hai dòng đẹp mắt. Tuyệt đối không viết phân số nằm trên một dòng ngang.
+- MẸO HỌC TẬP: Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là môn Toán: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là môn Tiếng Anh: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
+- PHÂN LOẠI DẠNG BÀI: Mỗi câu hỏi bắt buộc phải có thuộc tính "category" chứa dạng câu hỏi bằng tiếng Việt vô cùng ngắn gọn, dễ thương và thân thiện với trẻ em (Ví dụ: "Tìm x", "Cộng trừ phân số", "Diện tích hình tam giác", "Từ vựng tiếng Anh", "Đọc hiểu", "Lịch sử hào hùng"). Nếu có focusedCategory thì đặt category là "${focusedCategory}".
+- HÌNH MINH HỌA VECTOR (illustrationSvg): Bắt buộc vẽ hình minh họa bằng code SVG XML tự chứa (self-contained, bắt đầu bằng <svg> và kết thúc bằng </svg>, không chứa ký tự xuống dòng bên trong chuỗi JSON, sử dụng các thẻ như <rect>, <circle>, <line>, <polygon>, <text>, sử dụng các màu sắc tươi sáng, viền đậm rõ nét, kích thước viewBox="0 0 400 200" hoặc tương đương) đối với:
+   - Toàn bộ các câu hỏi Hình học (vẽ hình tam giác, hình tròn, hình thang,... có gắn nhãn các đỉnh A, B, C, D và số đo cạnh/góc cụ thể).
+   - Các câu hỏi từ vựng Tiếng Anh hoặc Toán tiểu học cần minh họa (vẽ quả táo, ngôi nhà, con mèo, cái cây,... đáng yêu, hoạt hình).
+   - Nếu câu hỏi không cần hình vẽ, hãy để thuộc tính "illustrationSvg" là chuỗi rỗng "".
 
-Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown):
-{"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"...","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"...","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải: ..."}]}]}`;
+Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown, không backtick):
+{"sections":[{"id":"s1","title":"Phần I: Trắc nghiệm","description":"...","questions":[{"id":"q1","number":1,"type":"multiple_choice","text":"...","category":"...","illustrationSvg":"","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":"A","points":0.5,"solution":"Giải chi tiết... \\n💡 Mẹo nhỏ cho bé tránh ẩu tả: Hãy kiểm tra kỹ xem tử số có nhỏ hơn mẫu số không nhé!"}]}]}`;
 
   let raw: string = "";
   let success = false;
@@ -691,11 +738,16 @@ ${JSON.stringify(essentialData)}
 
 YÊU CẦU:
 1. Thay đổi số liệu (ví dụ: 15 thành 24, Lan thành Huệ, cam thành quýt...)
-2. Cập nhật lại đáp án đúng (correctAnswer) tương ứng với số liệu mới
-3. Viết lại lời giải (solution) chi tiết theo số liệu mới
-4. Trả về đúng định dạng JSON là một mảng các câu hỏi.
+2. Cập nhật lại đáp án đúng (correctAnswer) tương ứng với số liệu mới.
+3. Viết lại lời giải (solution) chi tiết theo số liệu mới.
+4. PHÂN SỐ VÀ TOÁN HỌC: Bắt buộc viết tất cả các phân số dưới dạng a/b (ví dụ: 3/4, 2/5) trong câu hỏi, các lựa chọn và phần solution để hệ thống hiển thị hai dòng đẹp mắt. Tuyệt đối không viết phân số nằm trên một dòng ngang.
+5. MẸO HỌC TẬP: Ở cuối mỗi "solution", bạn phải bắt buộc thêm một dòng Mẹo học tập cho bé bằng tiếng Việt với định dạng sau tùy theo môn học:
+   - Nếu là Toán hoặc các dạng toán đố: "💡 Mẹo nhỏ cho bé tránh ẩu tả: [mẹo tính toán, kiểm tra kết quả hoặc cách nhớ công thức dễ thương]"
+   - Nếu là Tiếng Anh hoặc Ngoại ngữ: "💡 Mẹo ghi nhớ siêu nhanh: [mẹo bằng thơ, vè, hoặc liên tưởng vui nhộn]"
+   - Với các môn học khác: "💡 Mẹo nhớ nhanh: [tóm tắt bài học ngắn gọn, dễ thuộc]"
+6. Trả về đúng định dạng JSON là một mảng các câu hỏi.
 
-Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown):
+Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown, không backtick):
 {"questions": [...]}`;
 
   let raw: string = "";
@@ -870,4 +922,106 @@ Trả lời THEO JSON (TUYỆT ĐỐI không markdown):
   const parsed = parseJSON(raw);
   const score = Math.min(maxPoints, Math.max(0, Number(parsed?.score) || 0));
   return { score, feedback: String(parsed?.feedback || "Không có nhận xét") };
+}
+
+// ── Tạo lời giải chi tiết + mẹo ghi nhớ cho câu làm sai ─────────────────────
+export async function generateSolutionExplanation(params: {
+  questionText: string;
+  choicesText: string;
+  studentAnswer: string;
+  correctAnswer: string;
+  existingSolution?: string;
+  subject: string;
+  grade: string;
+}): Promise<string> {
+  const { questionText, choicesText, studentAnswer, correctAnswer, existingSolution, subject, grade } = params;
+
+  const prompt = `Bạn là gia sư dạy kèm ${subject} ${grade} Việt Nam xuất sắc nhất, đang giải thích một câu bé Mỹ Linh làm sai.
+
+CÂU HỎI:
+${questionText}
+${choicesText ? "\nCÁC LỰA CHỌN:\n" + choicesText : ""}
+
+ĐÁP ÁN BÉ CHỌN SAI: ${studentAnswer || "Bỏ qua"}
+ĐÁP ÁN ĐÚNG: ${correctAnswer}
+
+${existingSolution ? "LỜI GIẢI GỐC (để tham khảo):\n" + existingSolution : ""}
+
+YÊU CẦU (BẮT BUỘC):
+Viết một bản giải thích hoàn chỉnh gồm 3 phần chính bằng tiếng Việt, dành cho học sinh tiểu học ${grade}:
+
+PHẦN 1 — 🔍 VÌ SAO BÉ CHỌN SAI?
+Giải thích rõ ràng, cụ thể vì sao đáp án "${studentAnswer}" là sai. Chỉ ra chính xác điểm nhầm lẫn thường gặp. Viết 2-3 câu dễ hiểu cho trẻ em.
+
+PHẦN 2 — 📖 HƯỚNG DẪN LÀM ĐÚNG TỪNG BƯỚC:
+Trình bày cách giải chi tiết step-by-step. Mỗi bước phải:
+- Đánh số bước rõ ràng (Bước 1:, Bước 2:, ...)
+- Giải thích TẠI SAO làm bước đó (không chỉ "làm gì" mà phải "tại sao")
+- Dùng ngôn ngữ trẻ em, sinh động, ví dụ bằng hình ảnh gần gũi
+- Viết đầy đủ mọi phép tính trung gian
+- Cuối cùng khẳng định đáp án đúng
+
+PHẦN 3 — 💡 MẸO SIÊU ĐỈNH ĐỂ KHÔNG BAO GIỜ SAI NỮA:
+Tạo 1-2 mẹo học thuật CỰC KỲ ĐỘT PHÁ và DỄ NHỚ:
+- Có thể là câu thần chú, vần điệu, bài thơ ngắn, liên tưởng hình ảnh siêu thú vị
+- Mẹo phải IN SÂU VÀO NÃO học sinh ngay lập tức, không thể quên được
+- Ví dụ dễ nhớ, hài hước, gần gũi với cuộc sống trẻ em ${grade}
+- Kết thúc bằng một câu động viên bé Mỹ Linh thật đặc biệt
+
+Trả lời bằng text thuần, KHÔNG dùng markdown code block.`;
+
+  const groqKeys = GROQ_KEYS();
+  const geminiKeys = GEMINI_KEYS();
+  const onspaceKeys = ONSPACE_KEYS();
+
+  let raw = "";
+  let success = false;
+
+  // 1. OnSpace (Gemini 3 Flash Preview)
+  if (onspaceKeys.length > 0) {
+    try {
+      raw = await withOnSpaceRotation(async (key) => callOnSpace(prompt, undefined, key));
+      if (raw.length > 100) success = true;
+    } catch (err) {
+      console.warn("[gemini] OnSpace solution explanation failed:", err);
+    }
+  }
+
+  // 2. Groq
+  if (!success && groqKeys.length > 0) {
+    try {
+      raw = await withGroqRotation(async (key) =>
+        callGroq("llama-3.3-70b-versatile", [{ role: "user", content: prompt }], undefined, key)
+      );
+      if (raw.length > 100) success = true;
+    } catch (err) {
+      console.warn("[gemini] Groq solution explanation failed:", err);
+    }
+  }
+
+  // 3. Gemini
+  if (!success && geminiKeys.length > 0) {
+    try {
+      raw = await withGeminiRotation(async (key) => {
+        const genAI = new GoogleGenerativeAI(key);
+        const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      });
+      if (raw.length > 100) success = true;
+    } catch (err) {
+      console.warn("[gemini] Gemini solution explanation failed:", err);
+    }
+  }
+
+  // 4. Internal fallback — maps to generate-exam on local/supabase
+  if (!success) {
+    try {
+      const data = await callInternalAI("generate-exam", { prompt });
+      if (data?.text && data.text.length > 100) return data.text;
+    } catch { /* final fallback */ }
+  }
+
+  if (success && raw.length > 100) return raw;
+  throw new Error("Không thể tạo lời giải AI. Kiểm tra kết nối mạng và API Key.");
 }
