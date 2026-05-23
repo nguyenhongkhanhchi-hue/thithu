@@ -18,6 +18,48 @@ import { generateId } from "@/lib/storage";
 
 const GEMINI_MODEL = (import.meta as any).env?.VITE_GEMINI_MODEL || "gemini-2.5-flash";
 
+// ── Chrome Built-in Local AI (Gemini Nano) Helpers ──────────────────────────
+export async function isLocalAISupported(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  const aiObj = (window as any).ai;
+  if (!aiObj || !aiObj.languageModel) return false;
+  try {
+    const cap = await aiObj.languageModel.capabilities();
+    return cap.available !== 'no';
+  } catch {
+    return false;
+  }
+}
+
+export async function callLocalLanguageModel(promptText: string, systemPromptText?: string): Promise<string> {
+  if (typeof window === 'undefined') {
+    throw new Error("Cannot run local browser AI on server side.");
+  }
+  
+  const aiObj = (window as any).ai;
+  if (!aiObj || !aiObj.languageModel) {
+    throw new Error("Local Browser AI is not supported on this device/browser.");
+  }
+  
+  const cap = await aiObj.languageModel.capabilities();
+  if (cap.available === 'no') {
+    throw new Error("Local Browser AI model is not downloaded or ready.");
+  }
+
+  const sessionOptions: any = {};
+  if (systemPromptText) {
+    sessionOptions.systemPrompt = systemPromptText;
+  }
+  
+  const session = await aiObj.languageModel.create(sessionOptions);
+  try {
+    const response = await session.prompt(promptText);
+    return response;
+  } finally {
+    session.destroy();
+  }
+}
+
 // ── API Keys ──────────────────────────────────────────────────────────────────
 const GEMINI_KEYS = (): string[] => {
   try {
@@ -643,6 +685,20 @@ Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown, không backti
   let raw: string = "";
   let success = false;
 
+  // ── [LOCAL-FIRST HYBRID] Thử dùng Chrome Built-in Local AI (Gemini Nano) trước ──
+  try {
+    const localResult = await callLocalLanguageModel(prompt, `Bạn là giáo viên ${sourceExam.subject} ${sourceExam.grade} Việt Nam chuyên nghiệp.`);
+    if (localResult && localResult.length > 100) {
+      const data = parseJSON(localResult);
+      if (Array.isArray(data?.sections)) {
+        console.log("🚀 [LOCAL AI] Đã tạo đề thi thành công hoàn toàn OFFLINE qua Gemini Nano!");
+        return data.sections as ExamSection[];
+      }
+    }
+  } catch (localError) {
+    console.log("ℹ️ Local AI (Gemini Nano) chưa sẵn sàng hoặc gặp lỗi, đang tự động chuyển tiếp qua Cloud APIs...", localError);
+  }
+
   // 1. Thử dùng OnSpace rotation (Gemini 3 Flash Preview)
   if (onspaceKeys.length > 0) {
     try {
@@ -752,6 +808,23 @@ Trả lời CHÍNH XÁC theo JSON (TUYỆT ĐỐI không markdown, không backti
 
   let raw: string = "";
   let success = false;
+
+  // ── [LOCAL-FIRST HYBRID] Thử dùng Chrome Built-in Local AI (Gemini Nano) trước ──
+  try {
+    const localResult = await callLocalLanguageModel(prompt, "Bạn là giáo viên Việt Nam hỗ trợ học tập tiểu học.");
+    if (localResult && localResult.length > 50) {
+      const data = parseJSON(localResult);
+      if (Array.isArray(data?.questions)) {
+        console.log("🚀 [LOCAL AI] Đã xáo trộn câu hỏi thành công hoàn toàn OFFLINE qua Gemini Nano!");
+        return data.questions.map((q: any, i: number) => ({
+          ...questions[i],
+          ...q
+        }));
+      }
+    }
+  } catch (localError) {
+    console.log("ℹ️ Local AI (Gemini Nano) chưa sẵn sàng hoặc gặp lỗi, đang tự động chuyển tiếp qua Cloud APIs...", localError);
+  }
 
   // 1. Thử dùng OnSpace rotation
   if (onspaceKeys.length > 0) {
