@@ -15,6 +15,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AICredits, Difficulty, Exam, ExamSection } from "@/types/exam";
 import { generateId } from "@/lib/storage";
+import { searchKnowledgeBase } from "@/lib/rag";
 
 const GEMINI_MODEL = (import.meta as any).env?.VITE_GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -652,9 +653,12 @@ export async function generateExam(
     ? `BẮT BUỘC: Toàn bộ đề thi phải tập trung ôn luyện một dạng bài duy nhất là: "${focusedCategory}". Mọi câu hỏi được sinh ra phải cùng dạng bài này nhưng có độ khó tăng dần để con Mỹ Linh luyện tập nhuần nhuyễn.`
     : "Biên soạn các câu hỏi đa dạng dựa trên đề gốc hoặc kiến thức chuẩn.";
 
+  // Search local knowledge base for custom parent files context (Local RAG)
+  const knowledgeContext = searchKnowledgeBase(focusedCategory || sourceExam.subject || sourceExam.title || "");
+
   const prompt = `Bạn là giáo viên ${sourceExam.subject} ${sourceExam.grade} Việt Nam chuyên nghiệp.
 Tạo một đề thi mới dựa theo cấu trúc đề gốc.
-
+${knowledgeContext}
 ${diffDesc[difficulty]}
 
 ĐỀ GỐC: ${sourceExam.title || `${sourceExam.subject} ${sourceExam.grade}`}
@@ -899,7 +903,11 @@ export async function gradeEssay(
   solution: string,
   maxPoints: number,
 ): Promise<EssayGradeResult> {
+  // Search local knowledge base for custom parent files context (Local RAG)
+  const knowledgeContext = searchKnowledgeBase(questionText || solution || "");
+
   const prompt = `Bạn là cô giáo chấm bài tự luận toán/tiếng việt tiểu học Việt Nam.
+${knowledgeContext}
 Hãy chấm điểm dựa trên 3 tiêu chí:
 1. ĐÚNG KẾT QUẢ (50% số điểm)
 2. ĐÚNG CÁC BƯỚC GIẢI THÍCH (50% số điểm) - Nếu chỉ có kết quả mà không có lời giải/phép tính trung gian, hãy trừ 50% điểm để chống sao chép.
@@ -1009,7 +1017,11 @@ export async function generateSolutionExplanation(params: {
 }): Promise<string> {
   const { questionText, choicesText, studentAnswer, correctAnswer, existingSolution, subject, grade } = params;
 
+  // Search local knowledge base for custom parent files context (Local RAG)
+  const knowledgeContext = searchKnowledgeBase(questionText || subject || "");
+
   const prompt = `Bạn là gia sư dạy kèm ${subject} ${grade} Việt Nam xuất sắc nhất, đang giải thích một câu bé Mỹ Linh làm sai.
+${knowledgeContext}
 
 CÂU HỎI:
 ${questionText}
